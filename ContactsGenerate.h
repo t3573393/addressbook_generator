@@ -16,4 +16,6 @@
 
 - (void)clearAll;
 
+- (void)removeLeave:(int)number;
+
 @end

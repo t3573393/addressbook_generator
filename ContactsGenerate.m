@@ -235,4 +235,63 @@ NSString *numLetters = @"0123456789";
     
 }
 
+- (void)removeLeave:(int)number
+{
+    CFErrorRef *error = nil;
+    ABAddressBookRef libroDirec = ABAddressBookCreateWithOptions(NULL, error);
+    
+    
+    __block BOOL accessGranted = NO;
+    if (ABAddressBookRequestAccessWithCompletion != NULL) { // we're on iOS 6
+        dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+        ABAddressBookRequestAccessWithCompletion(libroDirec, ^(bool granted, CFErrorRef error) {
+            accessGranted = granted;
+            dispatch_semaphore_signal(sema);
+        });
+        dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+        
+    }
+    else { // we're on iOS 5 or older
+        accessGranted = YES;
+    }
+    
+    if (accessGranted)
+    {
+        NSMutableArray *contactsBookArray = (__bridge NSMutableArray *)ABAddressBookCopyArrayOfAllPeople(libroDirec);
+        NSInteger allCount = [contactsBookArray count];
+        if (allCount <= number)
+        {
+            return ;
+        }
+        
+        NSInteger needToDelete = allCount - number;
+        {
+            for(id person in contactsBookArray)
+            {
+                ABAddressBookRemoveRecord(libroDirec, (__bridge ABRecordRef)person, error);
+                needToDelete --;
+                if (needToDelete == 0)
+                {
+                    break;
+                }
+            }
+        }
+        
+        if (contactsBookArray != nil)
+        {
+            CFRelease((__bridge CFTypeRef)(contactsBookArray));
+        }
+    }
+    ABAddressBookSave(libroDirec, nil);
+    
+    CFRelease(libroDirec);
+    
+    NSString * errorString = [NSString stringWithFormat:@"Information are saved into Contact"];
+    
+    UIAlertView * errorAlert = [[UIAlertView alloc] initWithTitle:@"New Contact Info" message:errorString delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+    
+    [errorAlert show];
+
+}
+
 @end
